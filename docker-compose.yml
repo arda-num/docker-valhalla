@@ -1,0 +1,23 @@
+version: '3.0'
+services:
+  valhalla:
+    image: ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+    container_name: valhalla_latest
+    ports:
+      - 8002:8002
+    #build:
+    #  context: .
+    #  args:
+    #    - VALHALLA_UID=1000
+    #    - VALHALLA_GID=1000
+    volumes:
+      - ./custom_files/:/custom_files
+      - ./gtfs_feeds:/gtfs_feeds  # only enable with build_transit=True
+  
+    # adapt to the expected build time
+    # healthcheck: 
+    #   test: curl --fail -s http://localhost:8002/status || exit 1
+    #   interval: 1s
+    #   retries: 10
+    #   start_period: 2s
+    #   timeout: 1s
