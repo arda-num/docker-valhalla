@@ -1,7 +1,6 @@
 custom_files/
 !*/
 !/custom_files/odtu-latest.osm.pbf
-*.pbf
 !tests/*.pbf
 *.tar
 *.sqlite
