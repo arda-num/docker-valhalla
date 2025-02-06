@@ -4,8 +4,17 @@
 # with the previous runner's artifacts
 ARG VALHALLA_BUILDER_IMAGE=ghcr.io/valhalla/valhalla:latest
 FROM $VALHALLA_BUILDER_IMAGE as builder
+MAINTAINER Nils Nolde <nils@gis-ops.com>
+
+# remove some stuff from the original image
+RUN cd /usr/local/bin && \
+  preserve="valhalla_service valhalla_build_tiles valhalla_build_config valhalla_build_admins valhalla_build_timezones valhalla_build_elevation valhalla_ways_to_edges valhalla_build_extract valhalla_export_edges valhalla_add_predicted_traffic valhalla_ingest_transit valhalla_convert_transit valhalla_add_landmarks valhalla_build_landmarks" && \
+  mv $preserve .. && \
+  for f in valhalla*; do rm $f; done && \
+  cd .. && mv $preserve ./bin
 
 FROM ubuntu:24.04 as runner_base
+MAINTAINER Nils Nolde <nils@gis-ops.com>
 
 RUN apt-get update > /dev/null && \
   export DEBIAN_FRONTEND=noninteractive && \
@@ -19,6 +28,13 @@ COPY --from=builder /usr/local /usr/local
 COPY --from=builder /usr/local/lib/python3.12/dist-packages/valhalla /usr/local/lib/python3.12/dist-packages/
 
 ENV LD_LIBRARY_PATH="/usr/local/lib:${LD_LIBRARY_PATH}"
+# export the True defaults
+ENV use_tiles_ignore_pbf=True
+ENV build_tar=True
+ENV serve_tiles=True
+ENV update_existing_config=True
+
+ENV default_speeds_config_url="https://raw.githubusercontent.com/OpenStreetMapSpeeds/schema/master/default_speeds.json"
 
 # what this does:
 # if the docker user specified a UID/GID (other than 0, would be a ludicrous instruction anyways) in the image build, we will use that to create the valhalla linux user in the image. that ensures that the docker user can edit the created files on the host without sudo and with 664/775 permissions, so that users of that group can also write. the default is to give the valhalla user passwordless sudo. that also means that all commands creating files in the entrypoint script need to be executed with sudo when built with defaults..
@@ -51,4 +67,5 @@ ENV LD_LIBRARY_PATH /usr/local/lib:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-g
 
 # Expose the necessary port
 EXPOSE 8002
-CMD ["/valhalla/scripts/startup.sh"]
+ENTRYPOINT ["/valhalla/scripts/run.sh"]
+CMD ["build_tiles"]
